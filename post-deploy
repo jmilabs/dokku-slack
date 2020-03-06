@@ -8,11 +8,12 @@ HOSTNAME=$(hostname -f)
 if [[ -f "$DOKKU_ROOT/$APP/SLACK_URL" || -f "$DOKKU_ROOT/SLACK_URL" ]]; then
   echo "-----> Notifying Slack ..."
   URL=$(dokku url $APP)
+  GIT_COMMIT=$(git --git-dir="$DOKKU_ROOT/$APP" show --summary)
   SLACK_URL=$(cat "$DOKKU_ROOT/$APP/SLACK_URL" 2> /dev/null || cat "$DOKKU_ROOT/SLACK_URL" 2> /dev/null)
   SLACK_JSON="{ \
     \"attachments\": [{ \
-      \"text\": \"Deployed $APP to $HOSTNAME via $URL\", \
-      \"fallback\": \"Deployed $APP to $HOSTNAME via $URL\", \
+      \"text\": \"Deployed $APP at $URL from $GIT_COMMIT\", \
+      \"fallback\": \"Deployed $APP at $URL from $GIT_COMMIT\", \
       \"color\": \"good\", \
       \"mrkdwn_in\": [\"text\"] \
     }] \
