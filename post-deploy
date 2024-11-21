@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -eo pipefail; [[ $DOKKU_TRACE ]] && set -x
+source "$PLUGIN_CORE_AVAILABLE_PATH/common/functions"
+source "$PLUGIN_AVAILABLE_PATH/config/functions"
 
 APP="$1"
 IMAGE="$2"
@@ -7,13 +9,15 @@ HOSTNAME=$(hostname -f)
 
 if [[ -f "$DOKKU_ROOT/$APP/SLACK_URL" || -f "$DOKKU_ROOT/SLACK_URL" ]]; then
   echo "-----> Notifying Slack ..."
-  URL=$(dokku url $APP)
-  GIT_COMMIT=$(git --git-dir="$DOKKU_ROOT/$APP" show --summary)
+  DEPLOY_BRANCH="$(plugn trigger git-deploy-branch "$APP")"
+  URL="$(plugn trigger domains-urls "$APP")"
+  GIT_REVISION="$(plugn trigger git-revision "$APP")"
+  GIT_COMMIT="$(git --git-dir="$DOKKU_ROOT/$APP" show $GIT_REVISION --summary)"
   SLACK_URL=$(cat "$DOKKU_ROOT/$APP/SLACK_URL" 2> /dev/null || cat "$DOKKU_ROOT/SLACK_URL" 2> /dev/null)
   SLACK_JSON="{ \
     \"attachments\": [{ \
-      \"text\": \"Deployed $APP at $URL from $GIT_COMMIT\", \
-      \"fallback\": \"Deployed $APP at $URL from $GIT_COMMIT\", \
+      \"text\": \"Deployed $APP branch $DEPLOY_BRANCH at $URL from $GIT_COMMIT\", \
+      \"fallback\": \"Deployed $APP branch $DEPLOY_BRANCH at $URL from $GIT_COMMIT\", \
       \"color\": \"good\", \
       \"mrkdwn_in\": [\"text\"] \
     }] \
@@ -21,3 +25,4 @@ if [[ -f "$DOKKU_ROOT/$APP/SLACK_URL" || -f "$DOKKU_ROOT/SLACK_URL" ]]; then
   SLACK_RESULT=$(curl -s -d "payload=$SLACK_JSON" "${SLACK_URL}" -w "%{http_code}")
   echo "       ${SLACK_RESULT}"
 fi
+
